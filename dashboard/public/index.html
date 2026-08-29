@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Review and approve IBM Bob contract analysis evidence." />
+    <title>ContractRescue — Evidence before edits</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="ContractRescue home">
+        <span class="brand-mark">CR</span>
+        <span>ContractRescue</span>
+      </a>
+      <div class="bob-badge"><span class="pulse"></span> Powered by IBM Bob</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Contract arbitration · <span id="analysis-id">Loading</span></p>
+          <h1>Evidence before edits.</h1>
+          <p class="hero-copy">Independent agents inspected the consumer, provider, documentation, and tests. You decide which contract Bob may implement.</p>
+        </div>
+        <div class="status-card">
+          <span class="status-label">Workflow status</span>
+          <strong id="workflow-status">Loading analysis…</strong>
+        </div>
+      </section>
+
+      <section id="error-panel" class="error-panel hidden" role="alert"></section>
+
+      <section id="dashboard" class="hidden">
+        <div class="summary-grid">
+          <article class="metric-card">
+            <span>Endpoint</span>
+            <strong id="endpoint"></strong>
+            <small id="scenario"></small>
+          </article>
+          <article class="metric-card">
+            <span>Evidence records</span>
+            <strong id="evidence-count"></strong>
+            <small>file-backed observations</small>
+          </article>
+          <article class="metric-card danger">
+            <span>Blocking conflicts</span>
+            <strong id="conflict-count"></strong>
+            <small>approval required</small>
+          </article>
+          <article class="metric-card">
+            <span>Confidence</span>
+            <strong id="confidence"></strong>
+            <small>Bob recommendation</small>
+          </article>
+        </div>
+
+        <section class="panel conflict-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Blocking contradiction</p>
+              <h2 id="conflict-title"></h2>
+            </div>
+            <span class="blocking-pill">Blocking</span>
+          </div>
+          <div id="conflict-values" class="value-comparison"></div>
+          <p id="conflict-explanation" class="explanation"></p>
+        </section>
+
+        <section class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Traceable evidence</p>
+              <h2>What each source actually says</h2>
+            </div>
+            <div class="filter-row" id="filters"></div>
+          </div>
+          <div id="evidence-list" class="evidence-list"></div>
+        </section>
+
+        <div class="two-column">
+          <section class="panel">
+            <p class="eyebrow">Recommendation</p>
+            <div class="recommendation-value">HTTP <span id="recommended-value"></span></div>
+            <p id="recommendation-rationale" class="explanation"></p>
+            <p class="notice">Recommendation only. Bob cannot edit the application until you approve.</p>
+          </section>
+
+          <section class="panel approval-panel">
+            <p class="eyebrow">Human decision gate</p>
+            <h2>Authorize the contract</h2>
+            <label for="decision-value">Authoritative HTTP status</label>
+            <select id="decision-value"></select>
+            <label for="approver">Approving developer</label>
+            <input id="approver" type="text" maxlength="80" autocomplete="name" placeholder="Enter your name" />
+            <label class="checkbox-row">
+              <input id="acknowledgement" type="checkbox" />
+              <span>I reviewed the evidence and authorize Bob to implement HTTP <strong id="approval-value"></strong>.</span>
+            </label>
+            <button id="approve-button" type="button" disabled>Approve contract decision</button>
+            <p id="decision-message" class="decision-message" aria-live="polite"></p>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer>Local proof of concept · No credentials · No automatic source edits</footer>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

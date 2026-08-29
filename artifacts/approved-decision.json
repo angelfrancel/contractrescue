@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "decisionId": "CR-001-DECISION-001",
+  "analysisId": "CR-001",
+  "decision": "approved",
+  "approvedContract": {
+    "method": "POST",
+    "path": "/api/reservations",
+    "scenario": "duplicate reservation",
+    "statusCode": 409
+  },
+  "approvedBy": "The Orchid",
+  "approvedAt": "2026-08-29T10:24:01.012Z",
+  "sourceAnalysis": "artifacts/contract-analysis.json",
+  "recommendationAccepted": true,
+  "implementationAuthorized": true,
+  "constraints": [
+    "Generate and execute a failing contract test before repair",
+    "Modify only files required by the approved decision",
+    "Run the same contract test and all unit tests after repair",
+    "Perform independent verification"
+  ]
+}
