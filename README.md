@@ -89,7 +89,7 @@ CONTRACT_TRACEABILITY.md       Full end-to-end traceability narrative
 
 Requires Node.js 20 or later. Zero npm dependencies — `npm install` is not needed.
 
-**Run the configured unit and existing contract suites:**
+**Run the complete unit and contract suites (both contract tests):**
 
 ```bash
 npm test
@@ -101,13 +101,13 @@ npm test
 npm run test:unit
 ```
 
-**Existing contract suite:**
+**Contract suite (both existing and generated tests):**
 
 ```bash
 npm run test:contract
 ```
 
-**Generated contract test** (note: `npm run test:contract` targets `tests/contract/*.test.js` and does not include the `generated/` subdirectory — run this command directly):
+**Generated contract test** (can also be run directly to demonstrate RED/GREEN evidence in isolation):
 
 ```bash
 node --test tests/contract/generated/duplicate-reservation-approved.test.js
@@ -139,7 +139,7 @@ AssertionError: Expected provider to return HTTP 409 … but received 400
 
 **Independent verdict:** `VERIFIED_WITH_WARNINGS` — 15 pass, 0 fail, 1 warning-level criterion.
 
-The warning-level criterion recorded expected documentation and Bob-session evidence files outside the repair commit; no unexpected source, test, credential, or sensitive file was found. Separately, the verifier observed that `npm run test:contract` excludes `tests/contract/generated/` because of its glob pattern. The generated test was executed independently and passed, so no verification evidence gap remains, although the npm script still has a scope gap.
+The warning-level criterion recorded expected documentation and Bob-session evidence files outside the repair commit; no unexpected source, test, credential, or sensitive file was found. Separately, the verifier observed that the `npm run test:contract` script at the time of verification used a glob pattern that excluded `tests/contract/generated/`; the verifier therefore executed the generated test directly and confirmed it passed. The final repository subsequently closes that script-scope gap: `npm run test:contract` now explicitly lists both contract test files, and `npm test` invokes the full contract suite alongside the unit suite.
 
 ## Evidence
 
