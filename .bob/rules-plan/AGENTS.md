@@ -10,4 +10,5 @@ This file provides guidance to agents when working with code in this repository.
 - `backend/server.js` is a thin HTTP adapter used for manual and integration demonstrations.
 - New backend behavior should be implemented in a service module and exposed through the HTTP adapter. Business logic should not be placed directly in `server.js`.
 - The project currently has no linter, formatter configuration, TypeScript, database, or external runtime dependencies.
-- Plans must preserve the intentional broken baseline until the ContractRescue investigation and human approval stages are complete.
+- CR-001 is complete. Duplicate reservations correctly return HTTP 409. Plans must not treat any prior broken baseline as the current state.
+- Plans must use source paths declared by the selected, validated `contractrescue.json` (or explicit config). If a required path is absent from the config, identify the configuration gap before beginning investigation rather than inferring paths from the repository structure.
