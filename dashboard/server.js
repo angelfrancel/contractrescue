@@ -1,11 +1,35 @@
 import { createServer } from "node:http";
 import { readFile, writeFile } from "node:fs/promises";
-import { extname, join, normalize } from "node:path";
+import { existsSync } from "node:fs";
+import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateConfig } from "../config/validate-config.js";
+import {
+  buildConfigScopePayload,
+  createConfigScopeHandler,
+} from "./config-scope.js";
 
 const dashboardRoot = fileURLToPath(new URL("./public/", import.meta.url));
 const artifactsRoot = fileURLToPath(new URL("../artifacts/", import.meta.url));
 const port = Number(process.env.DASHBOARD_PORT ?? 4173);
+
+// Resolved once at server startup from import.meta.url — never from request input.
+const repoRoot = fileURLToPath(new URL("../", import.meta.url));
+const configFilePath = join(repoRoot, "contractrescue.json");
+
+async function readProductionConfigScope() {
+  const text = await readFile(configFilePath, "utf8");
+  const raw = JSON.parse(text); // throws SyntaxError → caught by handler → 503
+  const result = validateConfig(raw, repoRoot);
+  return buildConfigScopePayload(raw, result, {
+    // pathExists is called only with safe repository-relative paths supplied by
+    // buildConfigScopePayload after its own safety checks. repoRoot is never
+    // forwarded into the returned payload.
+    pathExists: (p) => existsSync(resolve(repoRoot, p)),
+  });
+}
+
+const handleConfigScope = createConfigScopeHandler(readProductionConfigScope);
 
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -127,6 +151,10 @@ async function serveStatic(request, response) {
 }
 
 const server = createServer(async (request, response) => {
+  if (request.method === "GET" && request.url === "/api/config-scope") {
+    return handleConfigScope(request, response);
+  }
+
   if (request.method === "GET" && request.url === "/api/analysis") {
     try {
       return sendJson(response, 200, await readJson("contract-analysis.json"));

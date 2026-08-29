@@ -1,5 +1,224 @@
 const state = { analysis: null, filter: "all" };
 
+// ---------------------------------------------------------------------------
+// Config scope rendering
+// ---------------------------------------------------------------------------
+
+const CATEGORY_LABELS = {
+  provider: "Provider",
+  consumer: "Consumer",
+  documentation: "Documentation",
+  tests: "Tests",
+};
+
+function renderConfigScope(payload) {
+  const section = $("#config-scope");
+  const statusBadge = $("#config-scope-status");
+  const body = $("#config-scope-body");
+
+  if (!payload.available) {
+    // 503 unavailable state
+    statusBadge.textContent = "";
+    const msg = document.createElement("p");
+    msg.className = "config-unavailable";
+    msg.textContent = "\u2298  Configuration scope unavailable.";
+    const hint = document.createElement("p");
+    hint.className = "explanation";
+    hint.textContent =
+      "contractrescue.json could not be read or is not valid JSON. " +
+      "Run: npm run contractrescue:validate";
+    body.replaceChildren(msg, hint);
+    section.classList.remove("hidden");
+    return;
+  }
+
+  // Status badge
+  statusBadge.className =
+    "config-status-badge " + (payload.valid ? "config-valid" : "config-invalid");
+  const statusSymbol = document.createElement("span");
+  statusSymbol.setAttribute("aria-hidden", "true");
+  statusSymbol.textContent = payload.valid ? "\u25CF" : "\u2715";
+  const statusText = document.createElement("span");
+  statusText.textContent = payload.valid ? " VALID" : " INVALID";
+  statusBadge.replaceChildren(statusSymbol, statusText);
+
+  const fragments = [];
+
+  // Meta line: project name + config filename
+  const meta = document.createElement("p");
+  meta.className = "config-meta";
+  meta.textContent =
+    (payload.projectName ?? "(unnamed)") + "  \u00B7  " + payload.configFilename;
+  fragments.push(meta);
+
+  // Category grid
+  const grid = document.createElement("div");
+  grid.className = "scope-grid";
+
+  for (const category of ["provider", "consumer", "documentation", "tests"]) {
+    const src = payload.sources?.[category];
+    if (!src) continue;
+
+    const card = document.createElement("article");
+    card.className = "scope-category";
+
+    // Category heading row
+    const heading = document.createElement("div");
+    heading.className = "scope-heading";
+
+    const catLabel = document.createElement("span");
+    catLabel.className = "scope-cat-label";
+    catLabel.textContent = CATEGORY_LABELS[category] ?? category;
+
+    const statusPill = document.createElement("span");
+    statusPill.className = "scope-pill scope-pill-" + src.status;
+    statusPill.textContent = src.status;
+
+    const reqPill = document.createElement("span");
+    reqPill.className = "scope-pill scope-pill-req";
+    reqPill.textContent = src.required ? "required" : "optional";
+
+    heading.append(catLabel, statusPill, reqPill);
+    card.append(heading);
+
+    if (src.paths.length === 0) {
+      const none = document.createElement("p");
+      none.className = "scope-no-paths";
+      none.textContent = "Not declared in configuration.";
+      card.append(none);
+    } else {
+      const list = document.createElement("ul");
+      list.className = "scope-path-list";
+      for (const entry of src.paths) {
+        const li = document.createElement("li");
+        li.className = "scope-path-row";
+
+        const pathText = document.createElement("span");
+        pathText.className = "scope-path-value";
+        pathText.textContent = entry.path;
+
+        const existsIndicator = document.createElement("span");
+        if (!entry.safe) {
+          existsIndicator.className = "scope-exists scope-unsafe";
+          existsIndicator.textContent = "unsafe";
+        } else if (entry.exists) {
+          existsIndicator.className = "scope-exists scope-found";
+          const icon = document.createElement("span");
+          icon.setAttribute("aria-hidden", "true");
+          icon.textContent = "\u2713 ";
+          const label = document.createElement("span");
+          label.textContent = "exists";
+          existsIndicator.append(icon, label);
+        } else {
+          existsIndicator.className = "scope-exists scope-missing";
+          const icon = document.createElement("span");
+          icon.setAttribute("aria-hidden", "true");
+          icon.textContent = "\u2717 ";
+          const label = document.createElement("span");
+          label.textContent = "not found";
+          existsIndicator.append(icon, label);
+        }
+
+        li.append(pathText, existsIndicator);
+        list.append(li);
+      }
+      card.append(list);
+    }
+
+    grid.append(card);
+  }
+  fragments.push(grid);
+
+  // Enabled personas
+  if (payload.enabledPersonas?.length > 0) {
+    const personaRow = document.createElement("div");
+    personaRow.className = "scope-persona-row";
+    const personaLabel = document.createElement("span");
+    personaLabel.className = "scope-persona-label";
+    personaLabel.textContent = "Enabled personas";
+    personaRow.append(personaLabel);
+    for (const p of payload.enabledPersonas) {
+      const pill = document.createElement("span");
+      pill.className = "scope-pill scope-pill-persona";
+      pill.textContent = p;
+      personaRow.append(pill);
+    }
+    fragments.push(personaRow);
+  }
+
+  // Errors
+  if (payload.errors?.length > 0) {
+    const errSection = document.createElement("div");
+    errSection.className = "scope-diagnostics scope-errors";
+    const errHeading = document.createElement("h3");
+    errHeading.textContent = "\u2715  " + payload.errors.length + " error" +
+      (payload.errors.length === 1 ? "" : "s") + " \u2014 workflow cannot proceed";
+    const errList = document.createElement("ul");
+    for (const e of payload.errors) {
+      const li = document.createElement("li");
+      li.textContent = e;
+      errList.append(li);
+    }
+    errSection.append(errHeading, errList);
+    fragments.push(errSection);
+  }
+
+  // Warnings
+  if (payload.warnings?.length > 0) {
+    const warnSection = document.createElement("div");
+    warnSection.className = "scope-diagnostics scope-warnings";
+    const warnHeading = document.createElement("h3");
+    warnHeading.textContent = "\u26A0  " + payload.warnings.length + " warning" +
+      (payload.warnings.length === 1 ? "" : "s");
+    const warnList = document.createElement("ul");
+    for (const w of payload.warnings) {
+      const li = document.createElement("li");
+      li.textContent = w;
+      warnList.append(li);
+    }
+    warnSection.append(warnHeading, warnList);
+    fragments.push(warnSection);
+  }
+
+  // Explanatory notices
+  if (payload.skippedSources?.length > 0) {
+    const notice = document.createElement("p");
+    notice.className = "scope-notice";
+    notice.textContent =
+      "\u2139  Skipping optional evidence sources does not automatically invalidate " +
+      "the workflow. Configured analyses are scoped to available evidence only.";
+    fragments.push(notice);
+  }
+
+  if (!payload.valid) {
+    const fixNotice = document.createElement("p");
+    fixNotice.className = "scope-notice scope-notice-fix";
+    fixNotice.textContent =
+      "Fix errors in contractrescue.json and restart the dashboard.";
+    fragments.push(fixNotice);
+  }
+
+  const requiredNotice = document.createElement("p");
+  requiredNotice.className = "scope-notice-muted";
+  requiredNotice.textContent =
+    "\u2139  Provider evidence is required. The workflow cannot proceed without it.";
+  fragments.push(requiredNotice);
+
+  body.replaceChildren(...fragments);
+  section.classList.remove("hidden");
+}
+
+function fetchConfigScope() {
+  fetch("/api/config-scope", { cache: "no-store" })
+    .then(async (response) => {
+      const payload = await response.json();
+      renderConfigScope(payload);
+    })
+    .catch(() => {
+      renderConfigScope({ available: false });
+    });
+}
+
 const $ = selector => document.querySelector(selector);
 const sourceLabels = {
   consumer: "Consumer",
@@ -145,6 +364,8 @@ $("#decision-value").addEventListener("change", () => {
 });
 $("#acknowledgement").addEventListener("change", updateApprovalState);
 $("#approve-button").addEventListener("click", approveDecision);
+
+fetchConfigScope();
 
 fetch("/api/analysis", { cache: "no-store" })
   .then(async response => {
