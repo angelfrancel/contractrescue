@@ -1,0 +1,174 @@
+{
+  "schemaVersion": "1.0",
+  "verificationId": "CR-001-VERIFY-001",
+  "analysisId": "CR-001",
+  "decisionId": "CR-001-DECISION-001",
+  "verifier": "contract-verifier",
+  "generatedBy": "IBM Bob",
+  "independence": "Performed in a separate Bob task after implementation was complete. The verifier subagent had no access to the implementation agent's context or reasoning. All evidence was re-read independently and all tests were freshly executed.",
+  "preflight": {
+    "command": "powershell.exe -NoProfile -Command \"Write-Output CONTRACTRESCUE_SHELL_OK\"",
+    "observedOutput": "CONTRACTRESCUE_SHELL_OK",
+    "status": "pass"
+  },
+  "repairCommit": {
+    "hash": "2d99e8480a218400d401b473a0bf1b7a1f07e17e",
+    "message": "fix: implement approved reservation contract",
+    "filesChanged": [
+      "artifacts/test-results.post-repair.json",
+      "backend/reservation-service.js",
+      "tests/unit/reservation-service.test.js"
+    ],
+    "unrelatedFilesChanged": false
+  },
+  "verdict": "verified_with_warnings",
+  "totalCriteria": 16,
+  "passedCriteria": 15,
+  "failedCriteria": 0,
+  "warningCriteria": 1,
+  "criteriaNote": "warningCriteria refers to one warning-level checklist criterion (criterion 16: git status). The two non-blocking observations below are recorded separately and do not count as additional warning or failed criteria.",
+  "criteria": [
+    {
+      "id": 1,
+      "description": "Every artifact refers to analysis ID CR-001",
+      "verdict": "pass",
+      "evidence": "All workflow artifacts carry analysis ID CR-001. Decision-linked artifacts consistently reference decision ID CR-001-DECISION-001."
+    },
+    {
+      "id": 2,
+      "description": "Decision is approved and implementationAuthorized is true",
+      "verdict": "pass",
+      "evidence": "approved-decision.json: \"decision\": \"approved\", \"implementationAuthorized\": true, approved by The Orchid at 2026-08-29T10:24:01.012Z"
+    },
+    {
+      "id": 3,
+      "description": "Approved duplicate-reservation status is 409",
+      "verdict": "pass",
+      "evidence": "approved-decision.json approvedContract.statusCode: 409"
+    },
+    {
+      "id": 4,
+      "description": "Generated test derives expected status from approved-decision.json",
+      "verdict": "pass",
+      "evidence": "tests/contract/generated/duplicate-reservation-approved.test.js reads EXPECTED_STATUS = decision.approvedContract.statusCode at runtime; no hard-coded status value in the assertion logic. A comment in the test file references 409, but the executed expectation is derived from approved-decision.json."
+    },
+    {
+      "id": 5,
+      "description": "Generated test was NOT changed during repair",
+      "verdict": "pass",
+      "evidence": "git diff HEAD^ HEAD shows no diff for tests/contract/generated/duplicate-reservation-approved.test.js; post-repair artifact records generatedTestModified: false"
+    },
+    {
+      "id": 6,
+      "description": "Pre-repair evidence records expected 409 and observed 400",
+      "verdict": "pass",
+      "evidence": "test-results.pre-repair.json: expectedStatus 409, observedStatus 400, runnerSummary pass 0 / fail 1"
+    },
+    {
+      "id": 7,
+      "description": "Repaired backend returns 409 for duplicates",
+      "verdict": "pass",
+      "evidence": "backend/reservation-service.js duplicate branch returns status 409; confirmed by freshly executed generated contract test (pass 1, fail 0)"
+    },
+    {
+      "id": 8,
+      "description": "RESERVATION_CONFLICT error code remains unchanged",
+      "verdict": "pass",
+      "evidence": "The repair changed the duplicate status from 400 to 409 and removed two obsolete baseline comments. The RESERVATION_CONFLICT code and message were untouched."
+    },
+    {
+      "id": 9,
+      "description": "Successful reservations remain 201",
+      "verdict": "pass",
+      "evidence": "backend/reservation-service.js success path returns status 201; unit test 'creates a reservation for an available item' asserts 201 and passes"
+    },
+    {
+      "id": 10,
+      "description": "Validation failures remain 400",
+      "verdict": "pass",
+      "evidence": "backend/reservation-service.js validation path returns status 400, code INVALID_REQUEST; this path was not touched by the repair"
+    },
+    {
+      "id": 11,
+      "description": "Frontend interprets 409 as a conflict (DUPLICATE_RESERVATION_STATUS)",
+      "verdict": "pass",
+      "evidence": "frontend/src/api/reservations.js: DUPLICATE_RESERVATION_STATUS = 409; interpretReservationResponse maps 409 to outcome 'conflict'; frontend unit test passes"
+    },
+    {
+      "id": 12,
+      "description": "Repair commit contains only authorized changes",
+      "verdict": "pass",
+      "evidence": "HEAD commit (2d99e8480a218400d401b473a0bf1b7a1f07e17e) touches exactly three files: backend/reservation-service.js, tests/unit/reservation-service.test.js, artifacts/test-results.post-repair.json; no unrelated files included in the repair commit"
+    },
+    {
+      "id": 13,
+      "description": "Generated contract test passes independently",
+      "verdict": "pass",
+      "evidence": "Freshly executed: node --test tests/contract/generated/duplicate-reservation-approved.test.js — pass 1, fail 0"
+    },
+    {
+      "id": 14,
+      "description": "Existing contract suite passes (npm run test:contract)",
+      "verdict": "pass",
+      "evidence": "Freshly executed: npm run test:contract — pass 1, fail 0"
+    },
+    {
+      "id": 15,
+      "description": "Unit suite passes (npm run test:unit)",
+      "verdict": "pass",
+      "evidence": "Freshly executed: npm run test:unit — pass 4, fail 0"
+    },
+    {
+      "id": 16,
+      "description": "git status contains no unexpected or sensitive files",
+      "verdict": "warning",
+      "evidence": "git status --short showed M README.md (unstaged modification) and four untracked files: artifacts/README.md, bob_sessions/README.md, bob_sessions/image-1.png, bob_sessions/image.png. All are documentation and session evidence assets produced outside the repair commit. No unexpected source, test, credential, or sensitive file was found."
+    }
+  ],
+  "freshTestResults": {
+    "generatedApprovedContractTest": {
+      "command": "node --test tests/contract/generated/duplicate-reservation-approved.test.js",
+      "pass": 1,
+      "fail": 0,
+      "status": "passed"
+    },
+    "existingContractSuite": {
+      "command": "npm run test:contract",
+      "pass": 1,
+      "fail": 0,
+      "status": "passed"
+    },
+    "unitSuite": {
+      "command": "npm run test:unit",
+      "pass": 4,
+      "fail": 0,
+      "status": "passed"
+    }
+  },
+  "preRepair": {
+    "expectedStatus": 409,
+    "observedStatus": 400,
+    "testStatus": "failed_as_expected",
+    "runnerSummary": { "pass": 0, "fail": 1 }
+  },
+  "postRepair": {
+    "approvedStatus": 409,
+    "observedStatus": 409,
+    "generatedTestModified": false,
+    "implementationFilesChanged": ["backend/reservation-service.js"],
+    "testFilesChanged": ["tests/unit/reservation-service.test.js"],
+    "unrelatedRepairFilesChanged": false
+  },
+  "nonBlockingObservations": [
+    {
+      "id": "OBS-001",
+      "blocking": false,
+      "observation": "npm run test:contract uses a glob pattern that excludes tests/contract/generated/. The generated contract test was therefore executed independently via 'node --test tests/contract/generated/duplicate-reservation-approved.test.js' and passed (pass 1, fail 0). No verification evidence gap remains because the generated test was executed independently; however, the npm script still has a scope gap."
+    },
+    {
+      "id": "OBS-002",
+      "blocking": false,
+      "observation": "git status --short showed documentation and session evidence files outside the repair commit: an unstaged modification to README.md and four untracked files (artifacts/README.md, bob_sessions/README.md, bob_sessions/image-1.png, bob_sessions/image.png). These are not source, test, credential, or sensitive files. Their presence does not affect the integrity of the repair."
+    }
+  ]
+}
