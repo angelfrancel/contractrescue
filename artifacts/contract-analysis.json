@@ -1,0 +1,184 @@
+{
+  "schemaVersion": "1.0",
+  "analysisId": "CR-001",
+  "generatedBy": "IBM Bob",
+  "status": "awaiting_human_approval",
+  "endpoint": {
+    "method": "POST",
+    "path": "/api/reservations",
+    "scenario": "duplicate reservation"
+  },
+  "evidence": [
+    {
+      "sourceType": "consumer",
+      "file": "frontend/src/api/reservations.js",
+      "symbol": "DUPLICATE_RESERVATION_STATUS",
+      "observation": "Exported named constant set to 409. The frontend explicitly expects HTTP 409 to signal a duplicate/conflicting reservation.",
+      "statusCode": 409,
+      "confidence": "high"
+    },
+    {
+      "sourceType": "consumer",
+      "file": "frontend/src/api/reservations.js",
+      "symbol": "interpretReservationResponse",
+      "observation": "Function maps status 201 -> outcome 'reserved', status 409 -> outcome 'conflict', any other status -> outcome 'unexpected_error'. HTTP 400 would fall into the unexpected_error branch, not the conflict branch.",
+      "statusCode": 409,
+      "confidence": "high"
+    },
+    {
+      "sourceType": "provider",
+      "file": "backend/reservation-service.js",
+      "symbol": "createReservation",
+      "observation": "When reservations.has(itemId) is true, the function returns status 400 with body { code: 'RESERVATION_CONFLICT', message: 'This item already has an active reservation.' }.",
+      "statusCode": 400,
+      "confidence": "high"
+    },
+    {
+      "sourceType": "provider",
+      "file": "backend/reservation-service.js",
+      "symbol": "createReservation",
+      "observation": "Successful reservation returns status 201 with body { reservationId, itemId, buyerId, status: 'active' }.",
+      "statusCode": 201,
+      "confidence": "high"
+    },
+    {
+      "sourceType": "provider",
+      "file": "backend/server.js",
+      "symbol": "createServer handler",
+      "observation": "Only POST /api/reservations is implemented. All other method/path combinations return 404 { code: 'NOT_FOUND' }. All responses set Content-Type: application/json.",
+      "statusCode": 404,
+      "confidence": "high"
+    },
+    {
+      "sourceType": "documentation",
+      "file": "docs/api-contract.md",
+      "symbol": "### Duplicate reservation",
+      "observation": "Specifies HTTP 409 Conflict for duplicate reservation scenarios, with error code RESERVATION_CONFLICT in the response body.",
+      "statusCode": 409,
+      "confidence": "high"
+    },
+    {
+      "sourceType": "documentation",
+      "file": "docs/api-contract.md",
+      "symbol": "### Successful reservation",
+      "observation": "Specifies HTTP 201 Created. Response body must include reservationId, itemId, buyerId, and status.",
+      "statusCode": 201,
+      "confidence": "high"
+    },
+    {
+      "sourceType": "unit_test",
+      "file": "tests/unit/reservation-service.test.js",
+      "symbol": "rejects a second reservation using the backend's current behavior",
+      "observation": "Asserts duplicate.status === 400 and duplicate.body.code === 'RESERVATION_CONFLICT'. This test encodes the backend's current observable behavior.",
+      "statusCode": 400,
+      "confidence": "high"
+    },
+    {
+      "sourceType": "unit_test",
+      "file": "tests/unit/reservation-service.test.js",
+      "symbol": "creates a reservation for an available item",
+      "observation": "Asserts result.status === 201, result.body.itemId === 'item-001', result.body.status === 'active'. Does not assert reservationId or buyerId presence.",
+      "statusCode": 201,
+      "confidence": "high"
+    },
+    {
+      "sourceType": "unit_test",
+      "file": "tests/unit/frontend-reservation.test.js",
+      "symbol": "frontend treats HTTP 409 as a reservation conflict",
+      "observation": "Asserts DUPLICATE_RESERVATION_STATUS === 409 and interpretReservationResponse(409).outcome === 'conflict'.",
+      "statusCode": 409,
+      "confidence": "high"
+    },
+    {
+      "sourceType": "unit_test",
+      "file": "tests/unit/frontend-reservation.test.js",
+      "symbol": "frontend cannot interpret the backend's duplicate status",
+      "observation": "Asserts interpretReservationResponse(400).outcome === 'unexpected_error'. Demonstrates that when the backend returns 400 for a duplicate, the consumer routes the response to the error path rather than the conflict path.",
+      "statusCode": 400,
+      "confidence": "high"
+    }
+  ],
+  "agreements": [
+    {
+      "contractElement": "Successful reservation HTTP status",
+      "sources": [
+        "consumer (frontend/src/api/reservations.js :: interpretReservationResponse)",
+        "provider (backend/reservation-service.js :: createReservation)",
+        "documentation (docs/api-contract.md :: ### Successful reservation)",
+        "unit_test (tests/unit/reservation-service.test.js :: creates a reservation for an available item)"
+      ],
+      "agreedValue": "201"
+    },
+    {
+      "contractElement": "Duplicate reservation error code in response body",
+      "sources": [
+        "provider (backend/reservation-service.js :: createReservation)",
+        "documentation (docs/api-contract.md :: ### Duplicate reservation)",
+        "unit_test (tests/unit/reservation-service.test.js :: rejects a second reservation using the backend's current behavior)"
+      ],
+      "agreedValue": "RESERVATION_CONFLICT"
+    },
+    {
+      "contractElement": "API endpoint path and method",
+      "sources": [
+        "provider (backend/server.js :: createServer handler)",
+        "documentation (docs/api-contract.md :: ## Create a reservation)"
+      ],
+      "agreedValue": "POST /api/reservations"
+    }
+  ],
+  "contradictions": [
+    {
+      "contractElement": "duplicate reservation HTTP status",
+      "blocking": true,
+      "observedValues": [
+        {
+          "value": 409,
+          "sources": [
+            "consumer (frontend/src/api/reservations.js :: DUPLICATE_RESERVATION_STATUS)",
+            "documentation (docs/api-contract.md :: ### Duplicate reservation)",
+            "unit_test (tests/unit/frontend-reservation.test.js :: frontend treats HTTP 409 as a reservation conflict)"
+          ]
+        },
+        {
+          "value": 400,
+          "sources": [
+            "provider (backend/reservation-service.js :: createReservation)",
+            "unit_test (tests/unit/reservation-service.test.js :: rejects a second reservation using the backend's current behavior)"
+          ]
+        }
+      ],
+      "explanation": "The written API contract specifies HTTP 409 for a duplicate reservation. The frontend consumer has an explicit conflict-handling branch that activates only on 409. The backend, for the same duplicate-reservation condition, currently returns 400. A frontend unit test independently confirms that a 400 response is routed to the 'unexpected_error' outcome rather than the 'conflict' outcome, meaning the backend's current behavior prevents the consumer's conflict path from ever being reached in production."
+    }
+  ],
+  "missingEvidence": [
+    {
+      "contractElement": "reservationId presence in successful response",
+      "explanation": "Documentation mandates reservationId in every successful response body, but no unit test asserts that this field is present. The backend does produce it; the gap is test coverage only."
+    },
+    {
+      "contractElement": "buyerId presence in successful response",
+      "explanation": "Documentation mandates buyerId in every successful response body, but no unit test asserts that this field is present."
+    },
+    {
+      "contractElement": "status field valid values",
+      "explanation": "The backend test asserts result.body.status === 'active' but the documentation does not enumerate valid status values. The expectation is encoded in the test without a documentation counterpart."
+    }
+  ],
+  "recommendation": {
+    "proposedValue": 409,
+    "rationale": "The written API contract requires HTTP 409 Conflict for duplicate reservations. The consumer already contains a dedicated conflict-handling branch that is gated on exactly that status code, and the provider already uses the semantically correct domain code RESERVATION_CONFLICT in the response body. Aligning the backend's HTTP status to 409 would satisfy the written requirement, activate the consumer's existing conflict branch, and eliminate the integration gap where the current 400 response causes the consumer to treat a known conflict condition as an unexpected error. This is a recommendation only and requires human approval before any implementation change is made.",
+    "confidence": "high"
+  },
+  "approval": {
+    "required": true,
+    "decision": null,
+    "approvedBy": null,
+    "approvedAt": null
+  },
+  "prohibitedNextActions": [
+    "Do not modify source code before human approval",
+    "Do not modify tests before human approval",
+    "Do not represent the recommendation as an approved contract"
+  ]
+}
