@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "project": {
+    "name": "Provider Only Test",
+    "description": "Fixture with provider source only — consumer, documentation, and tests omitted"
+  },
+  "sources": {
+    "provider": {
+      "required": true,
+      "paths": [
+        "tests/fixtures/configurable-workflow/provider-sample.js"
+      ]
+    }
+  },
+  "commands": {
+    "allTests": {
+      "program": "npm",
+      "args": ["test"]
+    }
+  },
+  "artifacts": {
+    "directory": "artifacts"
+  }
+}
