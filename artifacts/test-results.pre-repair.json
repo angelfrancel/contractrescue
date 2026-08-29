@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "runId": "CR-001-RED-001",
+  "analysisId": "CR-001",
+  "decisionId": "CR-001-DECISION-001",
+  "phase": "pre_repair",
+  "recordedBy": "IBM Bob",
+  "command": "node --test tests/contract/generated/duplicate-reservation-approved.test.js",
+  "expectedStatus": 409,
+  "observedStatus": 400,
+  "exitCode": null,
+  "exitCodeNote": "node --test does not print the process exit code in its output; fail count was 1 (non-zero exit confirmed by runner summary: pass 0, fail 1)",
+  "testStatus": "failed_as_expected",
+  "implementationModified": false,
+  "sourceTest": "tests/contract/generated/duplicate-reservation-approved.test.js",
+  "observedFailure": "AssertionError: Expected provider to return HTTP 409 for a duplicate reservation (approved by The Orchid at 2026-08-29T10:24:01.012Z), but received 400. Analysis: CR-001, Decision: CR-001-DECISION-001. — 400 !== 409 at duplicate-reservation-approved.test.js:42",
+  "runnerSummary": {
+    "tests": 1,
+    "suites": 1,
+    "pass": 0,
+    "fail": 1,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 160.3455
+  }
+}
