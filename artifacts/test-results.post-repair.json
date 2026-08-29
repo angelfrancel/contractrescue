@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "1.0",
+  "runId": "CR-001-GREEN-001",
+  "analysisId": "CR-001",
+  "decisionId": "CR-001-DECISION-001",
+  "phase": "post_repair",
+  "recordedBy": "IBM Bob",
+  "approvedStatus": 409,
+  "observedStatus": 409,
+  "implementationFilesModified": [
+    "backend/reservation-service.js"
+  ],
+  "testFilesModified": [
+    "tests/unit/reservation-service.test.js"
+  ],
+  "generatedTestModified": false,
+  "preRepairArtifact": "artifacts/test-results.pre-repair.json",
+  "commandResults": [
+    {
+      "command": "node --test tests/contract/generated/duplicate-reservation-approved.test.js",
+      "exitCode": null,
+      "exitCodeNote": "node --test does not print the process exit code in its output; pass count was 1, fail count was 0 (zero-failure exit confirmed by runner summary).",
+      "status": "passed",
+      "runnerSummary": {
+        "tests": 1,
+        "suites": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 172.158
+      }
+    },
+    {
+      "command": "npm run test:contract",
+      "exitCode": null,
+      "exitCodeNote": "npm run does not surface the child process exit code directly; pass count was 1, fail count was 0 (zero-failure exit confirmed by runner summary).",
+      "status": "passed",
+      "runnerSummary": {
+        "tests": 1,
+        "suites": 0,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 169.0485
+      }
+    },
+    {
+      "command": "npm run test:unit",
+      "exitCode": null,
+      "exitCodeNote": "npm run does not surface the child process exit code directly; pass count was 4, fail count was 0 (zero-failure exit confirmed by runner summary).",
+      "status": "passed",
+      "runnerSummary": {
+        "tests": 4,
+        "suites": 0,
+        "pass": 4,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 165.6023
+      }
+    }
+  ],
+  "allRequiredCommandsPassed": true,
+  "repairSummary": "The backend duplicate-reservation response status was changed from 400 to 409 in backend/reservation-service.js, aligning the provider with the written API contract (docs/api-contract.md), the frontend consumer expectation (DUPLICATE_RESERVATION_STATUS = 409), and the approved decision CR-001-DECISION-001 authorized by The Orchid. The stale backend unit test was updated to assert 409 and renamed to reflect approved-contract behavior. The RESERVATION_CONFLICT error code and message were preserved unchanged. All three required commands passed with zero failures.",
+  "unrelatedFilesModified": false
+}

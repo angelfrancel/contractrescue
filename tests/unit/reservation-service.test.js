@@ -12,12 +12,11 @@ test("creates a reservation for an available item", () => {
   assert.equal(result.body.status, "active");
 });
 
-test("rejects a second reservation using the backend's current behavior", () => {
+test("rejects a duplicate reservation with HTTP 409 per approved contract CR-001", () => {
   createReservation({ itemId: "item-001", buyerId: "buyer-001" });
   const duplicate = createReservation({ itemId: "item-001", buyerId: "buyer-002" });
 
-  // This layer-specific test passes, but it encodes the backend's mistaken assumption.
-  assert.equal(duplicate.status, 400);
+  assert.equal(duplicate.status, 409);
   assert.equal(duplicate.body.code, "RESERVATION_CONFLICT");
 });
 

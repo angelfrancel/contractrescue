@@ -15,10 +15,8 @@ export function createReservation({ itemId, buyerId }) {
   }
 
   if (reservations.has(itemId)) {
-    // Intentionally wrong for the initial demo baseline.
-    // The written contract and frontend expect HTTP 409.
     return {
-      status: 400,
+      status: 409,
       body: {
         code: "RESERVATION_CONFLICT",
         message: "This item already has an active reservation."
