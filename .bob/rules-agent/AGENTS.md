@@ -4,7 +4,9 @@ This file provides guidance to agents when working with code in this repository.
 
 ## Coding rules (non-obvious)
 
-- **Do not repair the `400` → `409` mismatch** in `backend/reservation-service.js` without an explicit user instruction to do so via the Bob workflow. It is the intentional broken baseline.
+- **CR-001 is complete.** Duplicate reservations correctly return HTTP 409. Do not revert the `RESERVATION_CONFLICT` error code or the 409 status.
+- Before any investigation, repair, or verification, run `npm run contractrescue:validate` (or with `-- --config <path>` for an explicit config). If validation exits nonzero, stop and report errors; do not spawn auditors or apply changes.
+- Configured commands declared in the selected config are never executed automatically; human command-approval is required.
 - All modules use ESM (`import`/`export`). No `require()`.
 - The backend service is a **pure in-memory function** — no database, no async. Keep it that way unless explicitly instructed otherwise.
 - Always call `resetReservations()` in `beforeEach` when writing tests that exercise `createReservation`. Forgetting this causes test pollution because state lives in a module-level `Map`.

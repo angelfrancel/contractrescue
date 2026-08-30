@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "project": {
+    "name": "Phase 2C Provider Capability Test",
+    "description": "Fixture with a real sampleOperation — validates meaningful provider-auditor extraction"
+  },
+  "sources": {
+    "provider": {
+      "required": true,
+      "paths": [
+        "tests/fixtures/configurable-workflow/phase2c-provider-sample.js"
+      ]
+    }
+  },
+  "commands": {
+    "allTests": {
+      "program": "npm",
+      "args": ["test"]
+    }
+  },
+  "artifacts": {
+    "directory": "artifacts"
+  }
+}

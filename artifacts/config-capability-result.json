@@ -1,0 +1,98 @@
+{
+  "task": "Phase 2B — Configuration-Driven Provider-Auditor Capability Test",
+  "timestamp": "2026-08-29T17:50:05Z",
+  "performedBy": "IBM Bob / provider-auditor",
+  "reviewedBy": "The Orchid",
+
+  "fixtureValidation": {
+    "configPath": "tests/fixtures/configurable-workflow/provider-only.json",
+    "exitCode": 0,
+    "status": "VALID",
+    "enabledSources": ["provider"],
+    "enabledPersonas": ["provider-auditor"],
+    "skippedSources": ["consumer", "documentation", "tests"],
+    "missingEvidence": ["consumer", "documentation", "tests"],
+    "warningCount": 3,
+    "warnings": [
+      "Source 'consumer' is not declared — skipped.",
+      "Source 'documentation' is not declared — skipped.",
+      "Source 'tests' is not declared — skipped."
+    ]
+  },
+
+  "auditorExecution": {
+    "personaDefinitionFile": ".bob/agents/provider-auditor.md",
+    "configPathRead": "tests/fixtures/configurable-workflow/provider-only.json",
+    "filesInspectedInOrder": [
+      {
+        "sequence": 1,
+        "path": ".bob/agents/provider-auditor.md",
+        "role": "persona-definition",
+        "note": "Loaded for auditor instructions only — not a configured evidence source"
+      },
+      {
+        "sequence": 2,
+        "path": "tests/fixtures/configurable-workflow/provider-only.json",
+        "role": "fixture-config",
+        "note": "Read before any provider evidence source, per workflow requirement"
+      },
+      {
+        "sequence": 3,
+        "path": "tests/fixtures/configurable-workflow/provider-sample.js",
+        "role": "provider-evidence",
+        "note": "Sole provider source declared in fixture config"
+      }
+    ],
+    "prohibitedFilesRead": [],
+    "filesModified": [],
+    "commandsExecuted": [],
+    "additionalSubagentsSpawned": 0
+  },
+
+  "sampleOperationFindings": {
+    "operationFound": false,
+    "finding": "No function, route, or operation named 'sampleOperation' is declared or exported in the provider source file. No contract behavior could be extracted.",
+    "exportedSymbols": [
+      { "name": "PROVIDER_NAME", "value": "reservation-service" },
+      { "name": "PROVIDER_VERSION", "value": "1.0.0" }
+    ],
+    "httpRoutes": [],
+    "statusCodes": [],
+    "requestShape": null,
+    "responseShape": null,
+    "errorCases": [],
+    "stateTransitions": [],
+    "validationLogic": null,
+    "evidenceTable": [
+      { "contractElement": "sampleOperation identity",   "providerBehavior": "Absent — not declared or exported", "confidence": "High", "contradictionStatus": "Cannot assess — no implementation present" },
+      { "contractElement": "HTTP route / method",        "providerBehavior": "None implemented",                  "confidence": "High", "contradictionStatus": "N/A" },
+      { "contractElement": "Success status code",        "providerBehavior": "None implemented",                  "confidence": "High", "contradictionStatus": "N/A" },
+      { "contractElement": "Error status codes",         "providerBehavior": "None implemented",                  "confidence": "High", "contradictionStatus": "N/A" },
+      { "contractElement": "Request validation",         "providerBehavior": "None implemented",                  "confidence": "High", "contradictionStatus": "N/A" },
+      { "contractElement": "Request body shape",         "providerBehavior": "None implemented",                  "confidence": "High", "contradictionStatus": "N/A" },
+      { "contractElement": "Response body shape",        "providerBehavior": "None implemented",                  "confidence": "High", "contradictionStatus": "N/A" },
+      { "contractElement": "State transitions",          "providerBehavior": "None implemented",                  "confidence": "High", "contradictionStatus": "N/A" },
+      { "contractElement": "Exported symbols (actual)",  "providerBehavior": "PROVIDER_NAME and PROVIDER_VERSION string constants only — fixture metadata, not contract-bearing operations", "confidence": "High", "contradictionStatus": "N/A" }
+    ]
+  },
+
+  "skippedSourcesReport": [
+    { "source": "consumer",      "status": "skipped", "reason": "Not declared in fixture config provider-only.json" },
+    { "source": "documentation", "status": "skipped", "reason": "Not declared in fixture config provider-only.json" },
+    { "source": "tests",         "status": "skipped", "reason": "Not declared in fixture config provider-only.json" }
+  ],
+
+  "verdicts": [
+    { "criterion": 1, "description": "Fixture config read before provider source",                          "result": "PASS" },
+    { "criterion": 2, "description": "provider-sample.js read",                                             "result": "PASS" },
+    { "criterion": 3, "description": "No production backend read",                                          "result": "PASS" },
+    { "criterion": 4, "description": "No frontend or documentation read",                                   "result": "PASS" },
+    { "criterion": 5, "description": "No application unit/contract test read",                              "result": "PASS" },
+    { "criterion": 6, "description": "Missing consumer/documentation/tests reported by workflow",           "result": "PASS" },
+    { "criterion": 7, "description": "No file modified",                                                    "result": "PASS" },
+    { "criterion": 8, "description": "No extra subagent spawned",                                           "result": "PASS" }
+  ],
+  "overallResult": "PASS",
+  "passingCriteria": 8,
+  "totalCriteria": 8
+}

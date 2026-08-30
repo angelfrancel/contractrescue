@@ -6,15 +6,26 @@ This file provides persistent project context and workflow constraints for agent
 
 ContractRescue is a proof of concept for an IBM Bob workflow that detects, explains, resolves, repairs, and verifies API-contract mismatches across documentation, frontend consumer behavior, backend provider behavior, schemas, and tests.
 
-The baseline is intentionally inconsistent:
+## CR-001 status
 
-- The written API document specifies HTTP 409 for duplicate reservations.
-- The frontend consumer expects HTTP 409.
-- The backend provider currently returns HTTP 400.
-- The backend unit test encodes the existing HTTP 400 behavior.
-- The cross-layer contract test intentionally fails with 400 versus 409.
+CR-001 is complete. Duplicate reservations correctly return HTTP 409. The `RESERVATION_CONFLICT` error code must not be reverted.
 
-Do not repair this mismatch during initialization or investigation. Any repair must follow the ContractRescue evidence, human approval, implementation, and verification workflow.
+The following CR-001 historical files are immutable and must not be modified:
+
+- `artifacts/contract-analysis.json`
+- `artifacts/approved-decision.json`
+- `artifacts/test-results.pre-repair.json`
+- `artifacts/test-results.post-repair.json`
+- `artifacts/verification-report.json`
+- `CONTRACT_TRACEABILITY.md`
+
+New run-specific artifacts may be created under distinct filenames only after their underlying task actually executes and a human reviews the proposed artifact.
+
+## Configuration and investigation
+
+Run `npm run contractrescue:validate` (or `npm run contractrescue:validate -- --config <path>` for an explicit config) before any investigation, repair, or verification. If validation exits nonzero, do not spawn auditors, do not investigate, do not repair — report the validation errors.
+
+Configured commands declared in `contractrescue.json` (or the selected config) are never executed automatically. Normal human command-approval is required before execution.
 
 ## Technology stack
 
@@ -42,3 +53,4 @@ Run all tests:
 
 ```bash
 npm test
+```

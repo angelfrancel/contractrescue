@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0",
+  "project": {
+    "name": "ContractRescue Demo",
+    "description": "Reservation API contract mismatch demonstration"
+  },
+  "contractTarget": {
+    "method": "POST",
+    "path": "/api/reservations",
+    "scenario": "duplicate reservation"
+  },
+  "sources": {
+    "provider": {
+      "required": true,
+      "paths": [
+        "backend/reservation-service.js",
+        "backend/server.js"
+      ]
+    },
+    "consumer": {
+      "required": false,
+      "paths": [
+        "frontend/src/api/reservations.js"
+      ]
+    },
+    "documentation": {
+      "required": false,
+      "paths": [
+        "docs/api-contract.md"
+      ]
+    },
+    "tests": {
+      "required": false,
+      "paths": [
+        "tests/unit/reservation-service.test.js",
+        "tests/unit/frontend-reservation.test.js",
+        "tests/contract/reservation-contract.test.js"
+      ]
+    }
+  },
+  "commands": {
+    "unitTests": {
+      "program": "npm",
+      "args": ["run", "test:unit"]
+    },
+    "contractTests": {
+      "program": "npm",
+      "args": ["run", "test:contract"]
+    },
+    "allTests": {
+      "program": "npm",
+      "args": ["test"]
+    }
+  },
+  "artifacts": {
+    "directory": "artifacts"
+  }
+}

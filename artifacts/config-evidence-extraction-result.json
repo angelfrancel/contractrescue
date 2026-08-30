@@ -1,0 +1,158 @@
+{
+  "task": "Phase 2C — Configuration-Driven Provider Evidence-Extraction Capability Test",
+  "timestamp": "2026-08-29T18:14:30.723Z",
+  "performedBy": "IBM Bob / provider-auditor",
+  "reviewedBy": "The Orchid",
+
+  "fixtureValidation": {
+    "configPath": "tests/fixtures/configurable-workflow/phase2c-provider-only.json",
+    "exitCode": 0,
+    "status": "VALID",
+    "enabledSources": ["provider"],
+    "enabledPersonas": ["provider-auditor"],
+    "skippedSources": ["consumer", "documentation", "tests"],
+    "missingEvidence": ["consumer", "documentation", "tests"],
+    "warningCount": 3,
+    "warnings": [
+      "Source 'consumer' is not declared — skipped.",
+      "Source 'documentation' is not declared — skipped.",
+      "Source 'tests' is not declared — skipped."
+    ]
+  },
+
+  "auditorExecution": {
+    "personaDefinitionFile": ".bob/agents/provider-auditor.md",
+    "configPathRead": "tests/fixtures/configurable-workflow/phase2c-provider-only.json",
+    "configReadBeforeEvidence": true,
+    "configReadOrderingNote": "Config file is orchestration input supplied to the subagent before invocation. The auditor correctly identified the sole declared provider path from it and inspected no files outside that scope. Config-first ordering is recorded here in the parent/subagent execution trace rather than in filesInspected, which represents configured provider evidence files only.",
+    "filesInspectedInOrder": [
+      {
+        "sequence": 1,
+        "path": ".bob/agents/provider-auditor.md",
+        "role": "persona-definition",
+        "note": "Loaded for auditor instructions only — not a configured evidence source"
+      },
+      {
+        "sequence": 2,
+        "path": "tests/fixtures/configurable-workflow/phase2c-provider-only.json",
+        "role": "fixture-config",
+        "note": "Read as orchestration input before any provider evidence source"
+      },
+      {
+        "sequence": 3,
+        "path": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js",
+        "role": "provider-evidence",
+        "note": "Sole provider source declared in fixture config"
+      }
+    ],
+    "prohibitedFilesRead": [],
+    "filesModified": [],
+    "commandsExecuted": [],
+    "additionalSubagentsSpawned": 0
+  },
+
+  "auditorReturnedMetadata": {
+    "configPath": "tests/fixtures/configurable-workflow/phase2c-provider-only.json",
+    "enabledSourceCategories": ["provider"],
+    "skippedSourceCategories": ["consumer", "documentation", "tests"],
+    "filesInspected": [
+      "tests/fixtures/configurable-workflow/phase2c-provider-sample.js"
+    ],
+    "auditorLocalMissingEvidence": [],
+    "workflowMissingEvidence": ["consumer", "documentation", "tests"]
+  },
+
+  "sampleOperationFindings": {
+    "operationFound": true,
+    "exportedSymbols": [
+      { "name": "sampleOperation", "kind": "function", "export": "named" }
+    ],
+    "inputShape": {
+      "itemId": {
+        "type": "string",
+        "required": true,
+        "constraints": "non-empty; trimmed before use"
+      },
+      "quantity": {
+        "type": "number",
+        "required": true,
+        "constraints": "integer, >= 1"
+      }
+    },
+    "httpRoutes": [],
+    "stateTransitions": [],
+    "externalDependencies": [],
+    "outcomes": [
+      {
+        "kind": "success",
+        "status": 200,
+        "triggeringCondition": "itemId is a non-empty string and quantity is an integer in [1, 99]",
+        "responseBody": {
+          "code": "OK",
+          "item": { "id": "string (trimmed itemId)", "quantity": "number" }
+        }
+      },
+      {
+        "kind": "validationFailure",
+        "status": 400,
+        "triggeringConditions": [
+          "input is falsy, itemId is not a string, or itemId is empty after trim",
+          "quantity is not a number, not an integer, or < 1"
+        ],
+        "responseBody": {
+          "code": "INVALID_INPUT",
+          "message": "string"
+        }
+      },
+      {
+        "kind": "domainConflict",
+        "status": 409,
+        "triggeringCondition": "quantity > 99",
+        "responseBody": {
+          "code": "QUANTITY_CONFLICT",
+          "message": "string"
+        }
+      }
+    ],
+    "contradictionStatusNote": "The auditor reported contradiction status as 'None' for all findings. The more precise interpretation is 'Not assessed — no comparison sources configured': consumer, documentation, and tests were all absent from the fixture config, so no cross-source comparison was possible. This is a non-blocking observation; it does not affect the PASS result.",
+    "evidenceTable": [
+      { "contractElement": "Operation identity",                   "providerBehavior": "sampleOperation exported as named function",                                         "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (line 17)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Input: itemId",                        "providerBehavior": "string, required, non-empty; trimmed before use",                                    "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (lines 19, 61)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Input: quantity",                      "providerBehavior": "number, required, integer, must be >= 1",                                            "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (lines 30–33)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Success status code",                  "providerBehavior": "200",                                                                                "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (line 57)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Success response body",                "providerBehavior": "{ code: \"OK\", item: { id: string, quantity: number } }",                           "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (lines 58–64)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Validation failure status code",       "providerBehavior": "400",                                                                                "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (lines 21, 36)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Validation failure response body",     "providerBehavior": "{ code: \"INVALID_INPUT\", message: string }",                                      "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (lines 22–25, 37–40)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Validation: missing/empty itemId",     "providerBehavior": "itemId is falsy, not a string, or empty after trim → 400 INVALID_INPUT",            "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (line 19)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Validation: invalid quantity",         "providerBehavior": "quantity not a number, not an integer, or < 1 → 400 INVALID_INPUT",                 "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (lines 30–33)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Domain-conflict status code",          "providerBehavior": "409",                                                                                "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (line 47)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Domain-conflict response body",        "providerBehavior": "{ code: \"QUANTITY_CONFLICT\", message: string }",                                  "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (lines 48–51)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "Domain-conflict triggering condition", "providerBehavior": "quantity > 99 → 409 QUANTITY_CONFLICT",                                             "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (line 45)", "confidence": "High", "contradictionStatus": "Not assessed — no comparison sources configured" },
+      { "contractElement": "HTTP server dependency",               "providerBehavior": "None present — deterministic synchronous function",                                  "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (lines 2–3)", "confidence": "High", "contradictionStatus": "N/A" },
+      { "contractElement": "Database / network / external deps",   "providerBehavior": "None present",                                                                       "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (lines 2–3)", "confidence": "High", "contradictionStatus": "N/A" },
+      { "contractElement": "State transitions",                    "providerBehavior": "None present — pure function, no side effects",                                      "evidence": "tests/fixtures/configurable-workflow/phase2c-provider-sample.js :: sampleOperation (function structure)", "confidence": "High", "contradictionStatus": "N/A" }
+    ]
+  },
+
+  "skippedSourcesReport": [
+    { "source": "consumer",      "status": "skipped", "reason": "Not declared in fixture config phase2c-provider-only.json" },
+    { "source": "documentation", "status": "skipped", "reason": "Not declared in fixture config phase2c-provider-only.json" },
+    { "source": "tests",         "status": "skipped", "reason": "Not declared in fixture config phase2c-provider-only.json" }
+  ],
+
+  "verdicts": [
+    { "criterion": 1,  "description": "Config read before provider evidence",                                                                "result": "PASS", "note": "Auditor correctly identified sole declared provider path from config; config-first ordering recorded in parent execution trace" },
+    { "criterion": 2,  "description": "phase2c-provider-sample.js inspected",                                                               "result": "PASS" },
+    { "criterion": 3,  "description": "sampleOperation identified",                                                                         "result": "PASS" },
+    { "criterion": 4,  "description": "Status codes 200, 400, and 409 extracted",                                                           "result": "PASS" },
+    { "criterion": 5,  "description": "OK, INVALID_INPUT, and QUANTITY_CONFLICT response shapes extracted",                                  "result": "PASS" },
+    { "criterion": 6,  "description": "itemId and quantity input constraints extracted",                                                     "result": "PASS" },
+    { "criterion": 7,  "description": "No production files inspected (no backend/, frontend/, docs/)",                                       "result": "PASS" },
+    { "criterion": 8,  "description": "No application tests inspected (no tests/unit/, tests/contract/)",                                   "result": "PASS" },
+    { "criterion": 9,  "description": "No files modified",                                                                                  "result": "PASS" },
+    { "criterion": 10, "description": "No additional subagents spawned",                                                                    "result": "PASS" }
+  ],
+  "overallResult": "PASS",
+  "passingCriteria": 10,
+  "totalCriteria": 10
+}
