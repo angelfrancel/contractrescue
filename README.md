@@ -1,127 +1,155 @@
-# ContractRescue
+# ContractRescue — Make every layer agree.
 
-ContractRescue detects cross-layer API contract mismatches, guides a developer through approving the correct behavior, and automatically generates a decision-bound test, repairs the implementation, and verifies the result end-to-end. IBM Bob is the orchestration and execution layer.
+ContractRescue is a configurable IBM Bob-powered workflow for governed API contract reconciliation. It detects cross-layer mismatches across documentation, frontend consumer code, backend provider code, and tests; presents the evidence for a human decision; generates a decision-bound failing test; applies a minimal authorized repair; and independently verifies the result — with a complete audit trail.
 
-## Problem
+> **Current state:** IBM Bob-native, repository-based prototype. Users configure and run the workflow inside an IBM Bob workspace. This is not a browser extension, deployed SaaS product, or fully automated production platform.
 
-API expectations can contradict each other across documentation, frontend consumer code, backend provider code, and tests simultaneously. Layer-specific test suites pass — each layer only validates its own assumptions — while integration behavior is wrong. The mismatch remains invisible until a cross-layer contract test catches it.
+---
 
-## Demonstrated scenario
+## The problem
 
-The reservation API contained a single inconsistency across four layers:
+API layers can each appear internally correct while disagreeing with each other. Layer-specific unit tests pass because they only validate local assumptions. The cross-layer mismatch stays invisible until something checks all layers simultaneously.
 
-| Layer | Expected status for duplicate |
+**CR-001 — reservation API duplicate-status mismatch (historical, now repaired):**
+
+| Layer | Expected status for duplicate reservation |
 |---|---|
 | `docs/api-contract.md` | 409 |
-| Frontend (`DUPLICATE_RESERVATION_STATUS`) | 409 |
-| Backend (`createReservation`) | **400** (pre-repair) |
-| Backend unit test | **400** (pre-repair) |
+| Frontend `DUPLICATE_RESERVATION_STATUS` | 409 |
+| Backend `createReservation` — **pre-repair** | **400** |
+| Backend unit test — **pre-repair** | **400** |
 
-Because the frontend only routes HTTP 409 to its `"conflict"` outcome branch, the backend's 400 response would cause a duplicate reservation to be treated as an unexpected error by the consumer.
+Because the frontend routes only HTTP 409 to its `"conflict"` outcome branch, the backend's 400 response would have caused any duplicate reservation to produce `"unexpected_error"` at the consumer — a silent behavioral contract break. Both the backend and its unit test passed independently. The mismatch was undetectable without cross-layer investigation.
 
-ContractRescue detected the contradiction, presented it for human approval, generated a failing contract test, applied a minimal repair, and independently verified the result — all through the Bob workflow with genuine artifacts.
+**Current state (post-repair):** the backend returns HTTP 409 and all layers agree.
 
-## End-to-end workflow
+---
 
-1. **Document and code understanding** — Bob reads `docs/api-contract.md`, frontend source, backend source, and both test suites.
-2. **Three parallel read-only auditors** — `contract-evidence-auditor`, `consumer-auditor`, and `provider-auditor` subagents investigate their respective layers simultaneously; no source code is modified during this phase.
-3. **Evidence arbitration** — Bob consolidates findings into `artifacts/contract-analysis.json`, identifies the blocking contradiction, and recommends aligning the backend to HTTP 409.
-4. **Human approval dashboard** — `npm run dashboard` serves the approval UI; the developer reviews the evidence summary and approves or rejects the recommended decision, which is recorded in `artifacts/approved-decision.json`.
-5. **Decision-bound RED test** — Bob generates `tests/contract/generated/duplicate-reservation-approved.test.js`, which reads the expected status at runtime from the approved decision artifact. The test is executed before any repair and fails with `expected 409, observed 400`.
-6. **Minimal Agent Mode repair** — Bob modifies only the files authorized by the decision: the backend status code and the stale backend unit test assertion. No unrelated implementation or test files are changed.
-7. **GREEN verification** — The generated contract test, the existing contract suite, and the full unit suite are all executed and pass.
-8. **Independent verifier** — A separate `contract-verifier` subagent in a new Bob task re-reads all evidence, re-executes all tests, and inspects the git diff. Its findings are subsequently materialized by Bob in `artifacts/verification-report.json` after human review.
+## The solution
 
-## IBM Bob 2.0 usage
+ContractRescue works through seven governed phases:
 
-- **Agent Mode** — Bob edits source files, writes tests, and records artifacts directly in the repository.
-- **Subagents and parallel tasks** — Three read-only auditor subagents run in parallel during investigation; a separate verifier subagent runs independently after implementation.
-- **Document understanding** — Bob reads `docs/api-contract.md` and interprets written API requirements as first-class evidence alongside code.
-- **Reusable `.bob/agents` personas** — Four named personas (`contract-evidence-auditor`, `consumer-auditor`, `provider-auditor`, `contract-verifier`) are defined in `.bob/agents/` and invoked by name across tasks.
-- **Approval gates** — No repair is started until `artifacts/approved-decision.json` is present and `implementationAuthorized: true`. The generated test and the repair are both decision-bound.
+1. **Validate** — `contractrescue.json` is checked before anything runs; invalid configuration is reported immediately and nothing proceeds.
+2. **Investigate** — Three read-only Bob auditors inspect the provider, consumer, and documentation/test evidence layers in parallel. No source file is touched.
+3. **Consolidate** — Bob merges findings into `artifacts/contract-analysis.json` and surfaces the blocking contradiction with a recommendation.
+4. **Human decision** — A developer reviews the evidence in the dashboard and may explicitly record an approval in `artifacts/approved-decision.json`. If the developer does not approve, no implementation authorization is created and the workflow stops without repair.
+5. **Decision-bound RED test** — Bob generates a contract test that reads the authorized status at runtime from the decision artifact. The test is executed before repair and must fail.
+6. **Minimal authorized repair** — Bob modifies only the files permitted by the approved decision. No unrelated code, tests, or configuration is changed.
+7. **GREEN verification + independent verifier** — All three required test commands pass. The `contract-verifier` runs in a separate IBM Bob task after implementation. It independently rereads the approved evidence, executes fresh verification commands, and does not rely on the repair task's conclusions as proof.
 
-## Architecture
+The **dashboard** is the human decision and traceability interface. It presents the investigation findings and records the approval. It is one component of the workflow, not the product itself.
 
-```text
-docs/
-  api-contract.md              Written API specification
+---
 
-frontend/src/api/
-  reservations.js              Consumer — DUPLICATE_RESERVATION_STATUS, interpretReservationResponse
+## How it works
 
-backend/
-  reservation-service.js       Provider — createReservation (repaired)
-  server.js                    HTTP server
-
-tests/unit/
-  reservation-service.test.js  Backend unit tests (updated to 409)
-  frontend-reservation.test.js Frontend unit tests
-
-tests/contract/
-  reservation-contract.test.js Existing cross-layer contract test
-  generated/
-    duplicate-reservation-approved.test.js  Decision-bound generated test
-
-dashboard/
-  server.js                    Approval dashboard server
-  public/                      Approval dashboard UI
-
-artifacts/
-  contract-analysis.json       Investigation findings and recommendation
-  approved-decision.json       Human approval record
-  test-results.pre-repair.json RED phase evidence
-  test-results.post-repair.json GREEN phase evidence
-  verification-report.json     Independent verifier structured result
-
-bob_sessions/
-  *.png                        Relevant IBM Bob task-session evidence
-
-.bob/agents/
-  contract-evidence-auditor.md
-  consumer-auditor.md
-  provider-auditor.md
-  contract-verifier.md
-
-CONTRACT_TRACEABILITY.md       Full end-to-end traceability narrative
+```mermaid
+flowchart TD
+    A["contractrescue.json"] --> B["Configuration validation"]
+    B --> C["Read-only Bob auditors"]
+    C --> D["Contract analysis"]
+    D --> E{"Human decision"}
+    E -->|Approved| F["Decision-bound RED test"]
+    E -->|Approval withheld| X["No repair authorized"]
+    F --> G["Minimal authorized repair"]
+    G --> H["GREEN verification"]
+    H --> I["Independent Bob verifier"]
+    I --> J["Audit trail and artifacts"]
 ```
 
-## Run the completed prototype
+The provider, consumer, and contract-evidence auditors are read-only investigation personas active during phases 2–3. The contract verifier is a separate persona that operates only after repair in phase 7.
 
-Requires Node.js 20 or later. Zero npm dependencies — `npm install` is not needed.
+---
 
-**Run the complete unit and contract suites (both contract tests):**
+## Why unit tests alone are insufficient
+
+| Unit tests | ContractRescue |
+|---|---|
+| Validate local assumptions within one layer | Checks cross-layer agreement across all sources simultaneously |
+| Do not choose which layer is authoritative | Records a human decision as the authoritative source of truth |
+| May all pass while integration behavior is wrong | Requires a RED failure before any repair is authorized |
+| Produce no pre/post repair contract evidence | Produces decision-bound RED and GREEN contract test evidence |
+| No audit trail of the resolution process | Complete chain: analysis → decision → test → repair → verification |
+
+---
+
+## IBM Bob's role
+
+Bob is both the build platform and the execution layer for the ContractRescue workflow.
+
+- **Three read-only auditor subagents** — `contract-evidence-auditor`, `consumer-auditor`, and `provider-auditor` run in parallel during investigation. They read source files and produce structured findings; they do not write or modify any file.
+- **Separate contract verifier** — The `contract-verifier` runs in a separate IBM Bob task after implementation. It independently rereads the approved evidence, executes fresh verification commands, and does not rely on the repair task's conclusions as proof.
+- **Governed repair** — Bob applies the minimal authorized repair only after a human has approved the decision and the decision-bound RED test has been executed and has failed.
+- **Human approvals** — Every decision, every authorized file change, and every configured command requires explicit human approval. Bob does not auto-approve anything.
+- **Bob task-session evidence** — `bob_sessions/` contains exported screenshots from relevant IBM Bob task-session summaries across investigation, repair, verification, capability testing, and documentation work.
+
+IBM Bob is required to execute the auditor, governed repair, and independent-verifier workflow. The `npm` commands in this repository validate configuration, run tests, and start the dashboard — they do not invoke IBM Bob.
+
+---
+
+## Configuration and portability
+
+[`contractrescue.json`](contractrescue.json) is the single configuration file that describes what to investigate. The validated schema uses these top-level keys: `schemaVersion`, `project`, `sources`, `commands`, and `artifacts`.
+
+```jsonc
+{
+  "schemaVersion": "1.0",
+  "project": {
+    "name": "ContractRescue Demo",
+    "description": "Reservation API contract mismatch demonstration"
+  },
+  "sources": {
+    "provider":      { "required": true,  "paths": ["backend/reservation-service.js", "backend/server.js"] },
+    "consumer":      { "required": false, "paths": ["frontend/src/api/reservations.js"] },
+    "documentation": { "required": false, "paths": ["docs/api-contract.md"] },
+    "tests":         { "required": false, "paths": [
+                         "tests/unit/reservation-service.test.js",
+                         "tests/unit/frontend-reservation.test.js",
+                         "tests/contract/reservation-contract.test.js"
+                       ] }
+  },
+  "commands": {
+    "unitTests":     { "program": "npm", "args": ["run", "test:unit"] },
+    "contractTests": { "program": "npm", "args": ["run", "test:contract"] },
+    "allTests":      { "program": "npm", "args": ["test"] }
+  },
+  "artifacts": { "directory": "artifacts" }
+}
+```
+
+- **Provider evidence is required.** The auditor cannot proceed without a backend source.
+- **Consumer, documentation, and test sources are optional.** When an optional category contains valid configured paths, it is enabled and its applicable auditor participates. When it is absent, empty, unsafe, or unavailable, ContractRescue skips or reports that evidence according to validator rules without inventing replacement paths.
+- **Provider-only config** is a supported capability: a config with only the provider source enabled passes validation and activates exactly one auditor persona.
+- **Adapting to another repository** means updating the `project`, `sources`, `commands`, and `artifacts` fields. See [`QUICKSTART.md`](QUICKSTART.md) for a step-by-step starting point.
+
+ContractRescue is currently a repository-based prototype. It does not install globally or connect to external services.
+
+---
+
+## Quickstart
+
+See **[QUICKSTART.md](QUICKSTART.md)** for the full step-by-step guide.
+
+Requires **Node.js 20 or later**. No `npm install` needed — the project has zero external dependencies.
 
 ```bash
+# 1. Validate configuration
+npm run contractrescue:validate
+
+# 2. Run the complete test suite
 npm test
-```
 
-**Unit suite only:**
-
-```bash
-npm run test:unit
-```
-
-**Contract suite (both existing and generated tests):**
-
-```bash
-npm run test:contract
-```
-
-**Generated contract test** (can also be run directly to demonstrate RED/GREEN evidence in isolation):
-
-```bash
-node --test tests/contract/generated/duplicate-reservation-approved.test.js
-```
-
-**Approval dashboard:**
-
-```bash
+# 3. Start the completed decision dashboard
 npm run dashboard
 ```
 
-## Verified result
+---
 
-**RED (pre-repair):**
+## Verified CR-001 result
+
+### Pre-repair RED (historical)
+
+The decision-bound contract test was executed before repair against the unmodified backend:
 
 ```
 node --test tests/contract/generated/duplicate-reservation-approved.test.js
@@ -129,46 +157,75 @@ node --test tests/contract/generated/duplicate-reservation-approved.test.js
 AssertionError: Expected provider to return HTTP 409 … but received 400
 ```
 
-**GREEN (post-repair):**
+Recorded in [`artifacts/test-results.pre-repair.json`](artifacts/test-results.pre-repair.json) (run ID: CR-001-RED-001).
+
+### Post-repair GREEN (historical)
+
+After the minimal authorized repair, all three required commands were executed:
 
 | Command | pass | fail |
 |---|---|---|
-| `node --test tests/contract/generated/…` | 1 | 0 |
+| `node --test tests/contract/generated/duplicate-reservation-approved.test.js` | 1 | 0 |
 | `npm run test:contract` | 1 | 0 |
 | `npm run test:unit` | 4 | 0 |
 
-**Independent verdict:** `VERIFIED_WITH_WARNINGS` — 15 pass, 0 fail, 1 warning-level criterion.
+Recorded in [`artifacts/test-results.post-repair.json`](artifacts/test-results.post-repair.json) (run ID: CR-001-GREEN-001). The generated contract test was not modified during repair.
 
-The warning-level criterion recorded expected documentation and Bob-session evidence files outside the repair commit; no unexpected source, test, credential, or sensitive file was found. Separately, the verifier observed that the `npm run test:contract` script at the time of verification used a glob pattern that excluded `tests/contract/generated/`; the verifier therefore executed the generated test directly and confirmed it passed. The final repository subsequently closes that script-scope gap: `npm run test:contract` now explicitly lists both contract test files, and `npm test` invokes the full contract suite alongside the unit suite.
+> **Note on historical script scope:** at the time of post-repair recording, `npm run test:contract` used a glob pattern that excluded `tests/contract/generated/`. The verifier executed the generated test independently and confirmed it passed. The contract script was subsequently hardened to explicitly list both contract test files, closing that scope gap.
 
-## Evidence
+### Independent verification (historical)
 
-Full end-to-end traceability narrative: [`CONTRACT_TRACEABILITY.md`](CONTRACT_TRACEABILITY.md)
+Verdict: **`VERIFIED_WITH_WARNINGS`** — 15 criteria passed, 0 failed, 1 warning.
 
-Key artifacts:
+The warning (criterion 16) was non-blocking and historical: at verification time, `git status` showed an unstaged `README.md` and four untracked files in `artifacts/` and `bob_sessions/`. All were expected documentation and session-evidence working-tree files. No source file, test file, credential, or sensitive file was found outside the repair commit.
 
-- `artifacts/contract-analysis.json` — contradiction finding and recommendation
-- `artifacts/approved-decision.json` — human approval record
-- `artifacts/test-results.pre-repair.json` — RED phase evidence
-- `artifacts/test-results.post-repair.json` — GREEN phase evidence
-- `artifacts/verification-report.json` — independent verifier structured result
+Recorded in [`artifacts/verification-report.json`](artifacts/verification-report.json).
 
-Bob task-session screenshots: `bob_sessions/`
+### Current repository suite
 
-## Security
+```
+npm test  →  34 total | 33 pass | 0 fail | 1 skipped
+```
 
-Never commit `.env`. The repository includes:
+The skipped test (T-12) requires symlink creation, which is platform-restricted on Windows. All other tests pass.
 
-- `.gitignore` — excludes `.env` and other sensitive files
-- `.bobignore` — excludes `.env` from Bob context
-- `.env.example` — provides safe environment-variable placeholders without secret values
-- `SECURITY.md` — disclosure policy
+---
 
-The committed repository must not contain credentials, tokens, secrets, or the local `.env` file. Review `git status` and `git diff` before every commit.
+## Human control and safety
+
+- **Read-only investigation** — auditor personas cannot write or modify any file.
+- **No application edit before approval** — repair is blocked until `artifacts/approved-decision.json` records `"implementationAuthorized": true`.
+- **Decision-bound RED test must fail first** — a passing test before repair would indicate no mismatch to fix.
+- **Minimum authorized repair scope** — only files explicitly permitted by the approved decision are changed; the repair commit contains no unrelated changes.
+- **Independent verification after repair** — the `contract-verifier` runs in a separate IBM Bob task after implementation, independently rereads the approved evidence, and does not rely on the repair task's conclusions as proof.
+- **No credentials required** — the local proof of concept uses no API keys, tokens, database connections, or authentication.
+
+---
+
+## Repository evidence
+
+| Location | Contents |
+|---|---|
+| [`artifacts/`](artifacts/) | The five linked CR-001 workflow artifacts, together with later configuration-capability evidence — covering investigation, approval, RED, GREEN, and independent verification, with full run IDs and decision linkage. See [`artifacts/README.md`](artifacts/README.md). |
+| [`CONTRACT_TRACEABILITY.md`](CONTRACT_TRACEABILITY.md) | Full end-to-end traceability narrative linking every phase, artifact, git commit, and test result for CR-001. |
+| [`bob_sessions/`](bob_sessions/) | Exported screenshots from relevant IBM Bob task-session summaries across investigation, repair, verification, capability testing, and documentation work. |
+
+---
+
+## Current prototype boundary
+
+ContractRescue is currently an **IBM Bob-native, repository-based prototype**:
+
+- Users configure and run it inside an IBM Bob workspace.
+- `contractrescue.json` declares the repository evidence scope and permitted verification commands. The contract scenario and endpoint are identified through the governed investigation and its resulting analysis artifact.
+- The workflow orchestration — parallel auditors, governed repair, independent verification — is performed by IBM Bob with human approval at each decision point.
+- No claims are made about production deployment, universal installation, benchmark results, or a user study.
+
+---
 
 ## Limitations
 
 - Focused proof of concept covering one endpoint (`POST /api/reservations`) and one mismatch type.
 - In-memory backend with no persistence; state resets on each test run.
-- Human approval remains required; the workflow does not auto-approve any decision.
-- No production deployment, user study, or benchmark results are claimed.
+- Human approval is always required; no decision is auto-approved.
+- IBM Bob workspace required for auditor, repair, and verifier workflow phases.
