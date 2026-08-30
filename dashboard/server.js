@@ -173,6 +173,16 @@ const server = createServer(async (request, response) => {
     }
   }
 
+  if (request.method === "GET" && request.url === "/api/verification") {
+    try {
+      return sendJson(response, 200, await readJson("verification-report.json"));
+    } catch {
+      return sendJson(response, 404, {
+        error: "No verification report found at artifacts/verification-report.json."
+      });
+    }
+  }
+
   if (request.method === "POST" && request.url === "/api/decision") {
     return handleApproval(request, response);
   }

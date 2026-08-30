@@ -17,102 +17,133 @@
     </header>
 
     <main>
-      <section class="hero">
-        <div>
-          <p class="eyebrow">Contract arbitration · <span id="analysis-id">Loading</span></p>
+      <section class="hero" aria-label="Run summary">
+        <div class="hero-text">
+          <p class="eyebrow">Contract arbitration · <span id="analysis-id">Loading…</span></p>
           <h1>Evidence before edits.</h1>
-          <p class="hero-copy">Independent agents inspected the consumer, provider, documentation, and tests. You decide which contract Bob may implement.</p>
         </div>
-        <div class="status-card">
+        <div class="hero-status">
           <span class="status-label">Workflow status</span>
-          <strong id="workflow-status">Loading analysis…</strong>
+          <strong id="workflow-status" class="status-value">Loading…</strong>
+          <span id="workflow-substatus" class="status-substatus"></span>
         </div>
-      </section>
-
-      <section id="config-scope" class="panel config-scope hidden" aria-label="Configured Evidence Scope">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Evidence configuration</p>
-            <h2>Configured Evidence Scope</h2>
-          </div>
-          <div id="config-scope-status" class="config-status-badge" role="status" aria-live="polite"></div>
-        </div>
-        <div id="config-scope-body"></div>
       </section>
 
       <section id="error-panel" class="error-panel hidden" role="alert"></section>
 
-      <section id="dashboard" class="hidden">
-        <div class="summary-grid">
-          <article class="metric-card">
-            <span>Endpoint</span>
-            <strong id="endpoint"></strong>
-            <small id="scenario"></small>
-          </article>
-          <article class="metric-card">
-            <span>Evidence records</span>
-            <strong id="evidence-count"></strong>
-            <small>file-backed observations</small>
-          </article>
-          <article class="metric-card danger">
-            <span>Blocking conflicts</span>
-            <strong id="conflict-count"></strong>
-            <small>approval required</small>
-          </article>
-          <article class="metric-card">
-            <span>Confidence</span>
-            <strong id="confidence"></strong>
-            <small>Bob recommendation</small>
-          </article>
+      <div id="main-content" class="hidden">
+        <!-- Tab bar -->
+        <div role="tablist" aria-label="Workflow views" class="tab-bar" id="tab-bar">
+          <button role="tab" id="tab-decision" aria-selected="true"  aria-controls="panel-decision"  tabindex="0"  class="tab-button tab-active">Decision</button>
+          <button role="tab" id="tab-evidence" aria-selected="false" aria-controls="panel-evidence"  tabindex="-1" class="tab-button">Evidence</button>
+          <button role="tab" id="tab-audit"    aria-selected="false" aria-controls="panel-audit"     tabindex="-1" class="tab-button">Audit Trail</button>
         </div>
 
-        <section class="panel conflict-panel">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Blocking contradiction</p>
-              <h2 id="conflict-title"></h2>
-            </div>
-            <span class="blocking-pill">Blocking</span>
+        <!-- ── Decision panel ── -->
+        <section role="tabpanel" id="panel-decision" aria-labelledby="tab-decision" class="tab-panel">
+          <!-- Completed-run summary (shown when decision is approved+verified) -->
+          <div id="decision-summary" class="panel hidden">
+            <!-- Populated by renderDecisionSummary() -->
           </div>
-          <div id="conflict-values" class="value-comparison"></div>
-          <p id="conflict-explanation" class="explanation"></p>
+
+          <!-- Full decision gate panel (shown for awaiting-approval, or fallback) -->
+          <div id="decision-full" class="hidden">
+            <div class="decision-grid">
+              <!-- Run meta -->
+              <div class="panel run-meta-panel">
+                <div class="run-meta-row">
+                  <div class="run-meta-item">
+                    <span class="meta-label">Endpoint</span>
+                    <strong id="endpoint" class="meta-value"></strong>
+                  </div>
+                  <div class="run-meta-item">
+                    <span class="meta-label">Scenario</span>
+                    <strong id="scenario" class="meta-value"></strong>
+                  </div>
+                  <div class="run-meta-item">
+                    <span class="meta-label">Evidence records</span>
+                    <strong id="evidence-count" class="meta-value"></strong>
+                  </div>
+                  <div class="run-meta-item">
+                    <span class="meta-label">Confidence</span>
+                    <strong id="confidence" class="meta-value"></strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Blocking contradiction -->
+              <section class="panel conflict-panel" aria-label="Blocking contradiction">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">Blocking contradiction</p>
+                    <h2 id="conflict-title"></h2>
+                  </div>
+                  <span class="blocking-pill">Blocking</span>
+                </div>
+                <div id="conflict-values" class="value-comparison"></div>
+                <p id="conflict-explanation" class="explanation"></p>
+              </section>
+
+              <!-- Recommendation -->
+              <section class="panel recommendation-panel" aria-label="Bob recommendation">
+                <p class="eyebrow">Bob's recommendation</p>
+                <div class="recommendation-value">HTTP <span id="recommended-value"></span></div>
+                <p id="recommendation-rationale" class="explanation"></p>
+                <p class="notice">Recommendation only. Bob cannot edit the application until you approve.</p>
+              </section>
+
+              <!-- Decision gate (awaiting-approval form or approved read-only state) -->
+              <section class="panel approval-panel" id="decision-gate" aria-label="Decision gate">
+                <!-- Populated by renderDecisionGate() -->
+              </section>
+            </div>
+          </div>
         </section>
 
-        <section class="panel">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Traceable evidence</p>
-              <h2>What each source actually says</h2>
-            </div>
-            <div class="filter-row" id="filters"></div>
+        <!-- ── Evidence panel ── -->
+        <section role="tabpanel" id="panel-evidence" aria-labelledby="tab-evidence" class="tab-panel" hidden>
+          <div class="panel">
+            <details id="scope-details" class="scope-details">
+              <summary class="scope-summary">
+                <span class="scope-summary-label">View configured evidence scope</span>
+                <span id="scope-summary-badge" class="scope-summary-badge"></span>
+              </summary>
+              <div id="config-scope-body" class="scope-body"></div>
+            </details>
           </div>
-          <div id="evidence-list" class="evidence-list"></div>
+
+          <div class="panel evidence-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Traceable evidence</p>
+                <h2>What each source actually says</h2>
+              </div>
+              <div class="filter-row" id="filters"></div>
+            </div>
+            <details id="evidence-details" class="evidence-disclosure">
+              <summary class="evidence-summary"><span id="evidence-summary-label">View evidence records</span></summary>
+              <div id="evidence-list" class="evidence-list"></div>
+            </details>
+          </div>
+
+          <div id="agreements-section" class="panel hidden" aria-label="Agreements"></div>
+          <div id="contradictions-section" class="panel hidden" aria-label="Contradictions"></div>
+          <div id="missing-evidence-section" class="panel hidden" aria-label="Missing evidence"></div>
         </section>
 
-        <div class="two-column">
-          <section class="panel">
-            <p class="eyebrow">Recommendation</p>
-            <div class="recommendation-value">HTTP <span id="recommended-value"></span></div>
-            <p id="recommendation-rationale" class="explanation"></p>
-            <p class="notice">Recommendation only. Bob cannot edit the application until you approve.</p>
-          </section>
-
-          <section class="panel approval-panel">
-            <p class="eyebrow">Human decision gate</p>
-            <h2>Authorize the contract</h2>
-            <label for="decision-value">Authoritative HTTP status</label>
-            <select id="decision-value"></select>
-            <label for="approver">Approving developer</label>
-            <input id="approver" type="text" maxlength="80" autocomplete="name" placeholder="Enter your name" />
-            <label class="checkbox-row">
-              <input id="acknowledgement" type="checkbox" />
-              <span>I reviewed the evidence and authorize Bob to implement HTTP <strong id="approval-value"></strong>.</span>
-            </label>
-            <button id="approve-button" type="button" disabled>Approve contract decision</button>
-            <p id="decision-message" class="decision-message" aria-live="polite"></p>
-          </section>
-        </div>
-      </section>
+        <!-- ── Audit Trail panel ── -->
+        <section role="tabpanel" id="panel-audit" aria-labelledby="tab-audit" class="tab-panel" hidden>
+          <div class="panel">
+            <p class="eyebrow">Workflow history</p>
+            <h2>Audit trail</h2>
+            <p class="explanation audit-note">
+              Recorded workflow run.
+              <em>contract-analysis.json is an immutable pre-approval analysis artifact. Later artifacts record the decision, repair, and verification.</em>
+            </p>
+            <ol id="audit-timeline" class="audit-timeline"></ol>
+          </div>
+        </section>
+      </div><!-- /main-content -->
     </main>
 
     <footer>Local proof of concept · No credentials · No automatic source edits</footer>
